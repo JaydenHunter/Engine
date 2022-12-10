@@ -19,15 +19,20 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "FragColor = vec4(1.0f,0.5f,0.2f,1.0f);\n"
 "}\0";
 
-
-
 //Temporary
 float vertices[] =
 {
-	-0.5f,-0.5f,0.0f,
-	0.5f,-0.5f,0.0f,
-	0.0f,0.5f,0.0f
+	0.5f,0.5f,0.0f, // Top right
+	0.5f,-0.5f,0.0f, // Bottom right
+	-0.5f,-0.5f,0.0f, // Bottom Left
+	-0.5f,0.5f,0.0f // Top left
 };
+
+unsigned int indices[] = {
+	0,1,3, // First Triangle
+	1,2,3 // Second Triangle
+};
+
 
 // Callback for when the user resizes the viewport
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -162,9 +167,23 @@ int main()
 	// 2. Copy our vertices array in a buffer for OpenGL to use
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	// 3. Set out vertex attribute pointers
+
+	// 3. Copy our index array in an elemnt buffer.
+	unsigned int EBO;
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	// 4. Set out vertex attribute pointers
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	// EBO (Element Buffer Objects)
+	
+	// Draw as wirefram
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	// Draw normally
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -177,16 +196,19 @@ int main()
 
 		// Rendering commands go here
 		//....
-		// 4. Draw the object
+		// 5. Draw the object
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
+		//glBindVertexArray(VAO);
+		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		// Check and call events and swap the buffers.
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteProgram(shaderProgram);
 	glfwTerminate();
 	return 0;
 }
