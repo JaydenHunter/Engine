@@ -153,10 +153,18 @@ int main()
 		std::cout << "SUCCESS::SHADER_PROGRAM::LINKING_SUCCESS" << std::endl;
 	}
 
-	// Every shader and rendering call after glUseProgram will now use this program object (shaders).
-	glUseProgram(shaderProgram);
-
-
+	// Creating a VAO - Vertex Array Object
+	unsigned int VAO;
+	glGenVertexArrays(1, &VAO);
+	// Initialization code (Done once (unless your object frequently changes))
+	// 1. Bind Vertex Array Object
+	glBindVertexArray(VAO);
+	// 2. Copy our vertices array in a buffer for OpenGL to use
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	// 3. Set out vertex attribute pointers
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -169,7 +177,10 @@ int main()
 
 		// Rendering commands go here
 		//....
-
+		// 4. Draw the object
+		glUseProgram(shaderProgram);
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// Check and call events and swap the buffers.
 		glfwSwapBuffers(window);
