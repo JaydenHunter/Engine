@@ -310,6 +310,9 @@ int main()
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
+	ourFirstShader.Use();
+	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
+	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -335,10 +338,18 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-		// Set up shader for coloured cube
+		
+
+
 		ourFirstShader.Use();
-		ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
-		ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		// Render IMGUI AFTER GEO
+		ImGui::Begin("Light Settings");
+		static float color[4] = { 1.0f,1.0f,1.0f,1.0f };
+		ImGui::ColorEdit3("color", color);
+		ourFirstShader.SetVec3("lightColor", color[0], color[1], color[2]);
+		ImGui::End();
+
+		// Set up shader for coloured cube
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
 
@@ -361,12 +372,6 @@ int main()
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-		// Render IMGUI AFTER GEO
-		ImGui::Begin("Demo Window");
-		ImGui::Button("Hello!");
-		ImGui::End();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
