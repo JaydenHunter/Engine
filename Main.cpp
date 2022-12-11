@@ -303,17 +303,21 @@ int main()
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-
+	ImFont* fontBold = io.Fonts->AddFontFromFileTTF("Assets\\Fonts\\IBM_Plex_Sans\\IBMPlexSans-Bold.ttf", 12.0f);
+	ImFont* fontRegular = io.Fonts->AddFontFromFileTTF("Assets\\Fonts\\IBM_Plex_Sans\\IBMPlexSans-Regular.ttf", 12.0f);
+	
 	// Setup platform/renderer bindings
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3, 3));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(5, 5));
 	ourFirstShader.Use();
 	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
 	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+	static float rotation[3] = { 0.0f,0.0f,0.0f };
+	static float color[4] = { 1.0f,1.0f,1.0f,1.0f };
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -339,25 +343,52 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-		
+		glm::mat4 model = glm::mat4(1.0f);
 
 
 		ourFirstShader.Use();
-		// Render IMGUI AFTER GEO
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f));
-		ImGui::Begin("Light Settings", NULL,ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-		static float color[4] = { 1.0f,1.0f,1.0f,1.0f };
-		ImGui::ColorEdit3("color", color);
-		ourFirstShader.SetVec3("lightColor", color[0], color[1], color[2]);
+		if (editMode)
+		{
+			ImGui::PushFont(fontBold);
+			ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+			ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+			ImGui::LabelText(" ", "Light Settings");
+			ImGui::PopFont();
+			
+			ImGui::PushFont(fontRegular);
+			ImGui::ColorEdit3("color", color);
+			ourFirstShader.SetVec3("lightColor", color[0], color[1], color[2]);
+			
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+			ImGui::PopFont();
 
-		ImGui::End();
+			ImGui::PushFont(fontBold);
+			ImGui::LabelText(" ", "Cube Settings");
+			ImGui::PopFont();
+			ImGui::PushFont(fontRegular);
+			ImGui::DragFloat3("Rotation", rotation);
+			for (int i = 0; i < 3; i++)
+			{
+				if (rotation[i] < 0)
+					rotation[i] = 360;
+				if (rotation[i] > 360)
+					rotation[i] = 0;
+			}
+			ImGui::PopFont();
+			ImGui::End();
+		}
 
 		// Set up shader for coloured cube
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
 
 		// World Transform
-		glm::mat4 model = glm::mat4(1.0f);
+		
+		model = glm::rotate(model, glm::radians(rotation[0]), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(rotation[1]), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(rotation[2]), glm::vec3(0.0f, 0.0f, 1.0f));
 		ourFirstShader.SetMat4("model", model);
 
 		// Render first cube
