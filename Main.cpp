@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "Camera.h"
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -69,50 +70,6 @@ glm::vec3 cubePositions[] = {
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
-unsigned int indices[] = {
-	0,1,3, // First Triangle
-	1,2,3 // Second Triangle
-};
-
-float verticesTwoSeperate[] = {
-	// first triangle
-	-0.9f, -0.5f, 0.0f,  // left 
-	-0.0f, -0.5f, 0.0f,  // right
-	-0.45f, 0.5f, 0.0f,  // top 
-	// second triangle
-	 0.0f, -0.5f, 0.0f,  // left
-	 0.9f, -0.5f, 0.0f,  // right
-	 0.45f, 0.5f, 0.0f   // top 
-};
-
-float firstTriangle[] = {
-	// Positions			// Colors
-	-0.9f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,  // left 
-	-0.0f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,// right
-	-0.45f, 0.5f, 0.0f,		0.0f, 0.0f, 1.0f// top 
-};
-float secondTriangle[] = {
-	// Positions			// Colors
-	0.0f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,// left
-	0.9f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,// right
-	0.45f, 0.5f, 0.0f,   0.0f, 0.0f, 1.0f// top 
-};
-
-float texCoords[] =
-{
-	0.0f, 0.0f, // lower-left corner
-	1.0f, 0.0f, // lower-right corner
-	0.5f, 1.0f // top-center corner
-};
-
-float vertsRectangle[] =
-{
-	// positions          // colors           // texture coords
-	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
-};
 
 // Callback for when the user resizes the viewport
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -120,34 +77,23 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraForward = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
-float pitch = 0;
-float yaw = -90.0f;
-float roll = 0;
-
-
 float lastX = 400, lastY = 300;
-
+Camera camera;
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	const float cameraSpeed = 2.5f * deltaTime;
-
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cameraPos += cameraSpeed * cameraForward;
+		camera.ProcessKeyboard(CAMERA_MOVEMENT::FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * cameraForward;
+		camera.ProcessKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cameraPos -= glm::normalize(glm::cross(cameraForward, cameraUp)) * cameraSpeed;
+		camera.ProcessKeyboard(CAMERA_MOVEMENT::LEFT, deltaTime);
 	if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cameraPos += glm::normalize(glm::cross(cameraForward, cameraUp)) * cameraSpeed;
+		camera.ProcessKeyboard(CAMERA_MOVEMENT::RIGHT, deltaTime);
 }
 
 bool firstMouse = true;
@@ -166,23 +112,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	lastX = xpos;
 	lastY = ypos;
 
-	const float sensitivity = 0.05f;
-	xOffset *= sensitivity;
-	yOffset *= sensitivity;
-
-	yaw += xOffset;
-	pitch += yOffset;
-
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraForward = glm::normalize(direction);
+	camera.ProcessMouseMovement(xOffset, yOffset, true);
 }
 
 float fov = 45;
@@ -254,7 +184,7 @@ int main()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
 	glEnableVertexAttribArray(0);
@@ -328,8 +258,6 @@ int main()
 	// Capture cursor and hide it
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-
-
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -349,7 +277,7 @@ int main()
 		// View Matrix
 		glm::mat4 view;
 		// we're translating the scene in the reverse direction of where we want to move
-		view = glm::lookAt(cameraPos, cameraPos + cameraForward,cameraUp);
+		view = camera.GetViewMatrix();
 		//view = glm::rotate(view, (float)glfwGetTime() * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 
