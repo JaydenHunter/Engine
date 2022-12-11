@@ -120,10 +120,81 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraForward = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float pitch = 0;
+float yaw = -90.0f;
+float roll = 0;
+
+
+float lastX = 400, lastY = 300;
+
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+
+	const float cameraSpeed = 2.5f * deltaTime;
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		cameraPos += cameraSpeed * cameraForward;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		cameraPos -= cameraSpeed * cameraForward;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		cameraPos -= glm::normalize(glm::cross(cameraForward, cameraUp)) * cameraSpeed;
+	if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		cameraPos += glm::normalize(glm::cross(cameraForward, cameraUp)) * cameraSpeed;
+}
+
+bool firstMouse = true;
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+
+	float xOffset = xpos - lastX;
+	float yOffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
+	lastX = xpos;
+	lastY = ypos;
+
+	const float sensitivity = 0.05f;
+	xOffset *= sensitivity;
+	yOffset *= sensitivity;
+
+	yaw += xOffset;
+	pitch += yOffset;
+
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	direction.y = sin(glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	cameraForward = glm::normalize(direction);
+}
+
+float fov = 45;
+
+void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
+{
+	fov -= (float)yOffset;
+
+	if (fov < 1.0f)
+		fov = 1.0f;
+	if (fov > 65.0f)
+		fov = 65.0f;
 }
 
 int main()
@@ -165,9 +236,10 @@ int main()
 	// Processed coordiants in OpenGL are between -1 and 1.
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-	//Register callback event
+	//Register callback events
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 	//Testing Code to generate a vertex buffer
 
 	//Vertex Buffer Object
@@ -253,30 +325,37 @@ int main()
 	//Enable Depth testing
 	glEnable(GL_DEPTH_TEST);
 
+	// Capture cursor and hide it
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+
+
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 		// Clear the screen
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Handle inputs
 		processInput(window);
-
+		
 		// Model Matrix
 		/*glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model,(float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));*/
-
 		// View Matrix
-		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 view;
 		// we're translating the scene in the reverse direction of where we want to move
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		view = glm::lookAt(cameraPos, cameraPos + cameraForward,cameraUp);
+		//view = glm::rotate(view, (float)glfwGetTime() * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
 
 		// Projection Matrix
 		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
-
-		
+		projection = glm::perspective(glm::radians(fov), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
 		int viewLoc = glGetUniformLocation(ourFirstShader.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
