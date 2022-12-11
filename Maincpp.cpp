@@ -3,6 +3,8 @@
 #include <iostream>
 #include <crtdbg.h>
 #include "Shader.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 //Temporary
 float vertices[] =
@@ -40,6 +42,22 @@ float secondTriangle[] = {
 	0.0f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,// left
 	0.9f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,// right
 	0.45f, 0.5f, 0.0f,   0.0f, 0.0f, 1.0f// top 
+};
+
+float texCoords[] =
+{
+	0.0f, 0.0f, // lower-left corner
+	1.0f, 0.0f, // lower-right corner
+	0.5f, 1.0f // top-center corner
+};
+
+float vertsRectangle[] =
+{
+	// positions          // colors           // texture coords
+	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
 };
 
 // Callback for when the user resizes the viewport
@@ -99,65 +117,78 @@ int main()
 	//Testing Code to generate a vertex buffer
 
 	//Vertex Buffer Object
-	unsigned int VBO;
+	unsigned int VBO, VAO, EBO;
+	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertsRectangle), vertsRectangle, GL_STATIC_DRAW);
 
-	// Copy the vertex data into the buffer's memory
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6* sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	Shader ourFirstShader("Assets/Shaders/simpleVertShader.vs", "Assets/Shaders/simpleFragShader.fs");
+
+	//set stbi to flip on load
+	stbi_set_flip_vertically_on_load(true);
+
+	// Generating a texture
+	unsigned int texture1;
+	glGenTextures(1, &texture1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+	// Set the texture wrapping/filtering options 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
-	// We can generate multiple VAOS or buffers at the same time
-	unsigned int VBOs[2], VAOs[2];
-	glGenVertexArrays(2, VAOs);
-	glGenBuffers(2, VBOs);
+	// Load and generate texture.
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load("Assets/Images/container.jpg", &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
 
-	// Set up first triangle data
-	glBindVertexArray(VAOs[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(firstTriangle), firstTriangle, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	// We dont need to unbind as we are directly binding to a different VAO
-	// Set up second triangle data
-	glBindVertexArray(VAOs[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(secondTriangle), secondTriangle, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	glBindVertexArray(0); // unbinds the vertex
+	unsigned int texture2;
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+	// Set the texture wrapping/filtering options 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	//// Creating a VAO - Vertex Array Object
-	//unsigned int VAO;
-	//glGenVertexArrays(1, &VAO);
-	//// Initialization code (Done once (unless your object frequently changes))
-	//// 1. Bind Vertex Array Object
-	//glBindVertexArray(VAO);
-	//// 2. Copy our vertices array in a buffer for OpenGL to use
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(verticesTwoSeperate), verticesTwoSeperate, GL_STATIC_DRAW);
-
-	//// 3. Copy our index array in an elemnt buffer.
-	//unsigned int EBO;
-	//glGenBuffers(1, &EBO);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	//// 4. Set out vertex attribute pointers
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	//glEnableVertexAttribArray(0);
-
-	// EBO (Element Buffer Objects)
-
-	// Draw as wirefram
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	// Draw normally
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	Shader ourFirstShader("Shaders/simpleVertShader.vs", "Shaders/simpleFragShader.fs");
-
+	data = stbi_load("Assets/Images/awesomeface.png", &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+	ourFirstShader.Use();
+	glUniform1i(glGetUniformLocation(ourFirstShader.ID, "texture1"), 0); // Set it manually
+	ourFirstShader.SetInt("texture2", 1); // or set with shader class
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -167,22 +198,26 @@ int main()
 
 		// Handle inputs
 		processInput(window);
-		ourFirstShader.Use();
-		float timeValue = glfwGetTime();
-		float alteredValue = (sin(timeValue) / 2.0f) + 0.5f;
-		ourFirstShader.SetVec4("ourColor", 0.0f, timeValue, 0.0f, 1.0f);
+		
 		// Rendering commands go here
 		//....
 		// 5. Draw the object
 
 		//glUniform4f(vertexColorLocation1, 0.0f, alteredValue, 0.0f, 1.0f);
 		// Draw the first triangle using the data from the first VAO
-		glBindVertexArray(VAOs[0]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		// then we draw the second triangle using the data from the second VAO
-		//glUniform4f(vertexColorLocation1, alteredValue, 0.0f, 0.0f, 1.0f);
-		glBindVertexArray(VAOs[1]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//glBindVertexArray(VAOs[0]);
+		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		//// then we draw the second triangle using the data from the second VAO
+		////glUniform4f(vertexColorLocation1, alteredValue, 0.0f, 0.0f, 1.0f);
+		//glBindVertexArray(VAOs[1]);
+		//glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		glBindVertexArray(VAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// Check and call events and swap the buffers.
 		glfwSwapBuffers(window);
