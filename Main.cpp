@@ -9,9 +9,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
-
+#include "Vendor/imgui.h"
+#include "Vendor/imgui_impl_glfw.h"
+#include "Vendor/imgui_impl_opengl3.h"
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
+
+bool editMode = true;
 //Temporary
 float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -81,19 +85,38 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 float lastX = 400, lastY = 300;
 Camera camera;
+
+bool spaceWasReleased = true;
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(CAMERA_MOVEMENT::FORWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(CAMERA_MOVEMENT::LEFT, deltaTime);
-	if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(CAMERA_MOVEMENT::RIGHT, deltaTime);
+	if (!editMode)
+	{
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			camera.ProcessKeyboard(CAMERA_MOVEMENT::FORWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			camera.ProcessKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			camera.ProcessKeyboard(CAMERA_MOVEMENT::LEFT, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			camera.ProcessKeyboard(CAMERA_MOVEMENT::RIGHT, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && spaceWasReleased)
+	{
+		editMode = !editMode;
+
+		if (!editMode)
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		else
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+		spaceWasReleased = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
+		spaceWasReleased = true;
+
 }
 
 bool firstMouse = true;
@@ -111,14 +134,19 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	float yOffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
 	lastX = xpos;
 	lastY = ypos;
-
-	camera.ProcessMouseMovement(xOffset, yOffset, true);
+	if (!editMode)
+	{
+		camera.ProcessMouseMovement(xOffset, yOffset, true);
+	}
 }
 
 float fov = 45;
 
 void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 {
+	if (editMode)
+		return;
+
 	fov -= (float)yOffset;
 
 	if (fov < 1.0f)
@@ -191,7 +219,7 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	Shader ourFirstShader("Assets/Shaders/simpleVertShader.vs", "Assets/Shaders/simpleFragShader.fs");
+	Shader ourFirstShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/lightFragShader.fs");
 
 	//set stbi to flip on load
 	stbi_set_flip_vertically_on_load(true);
@@ -241,6 +269,8 @@ int main()
 	}
 	stbi_image_free(data);
 	ourFirstShader.Use();
+	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
+	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
 	glUniform1i(glGetUniformLocation(ourFirstShader.ID, "texture1"), 0); // Set it manually
 	ourFirstShader.SetInt("texture2", 1); // or set with shader class
 
@@ -255,67 +285,106 @@ int main()
 	//Enable Depth testing
 	glEnable(GL_DEPTH_TEST);
 
-	// Capture cursor and hide it
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//temp light
+	unsigned int lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
+	Shader lightSourceShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/simpleWhiteFragShader.fs");
+
+	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+	// IMGUI test
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+
+	// Setup platform/renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
+		// Calculate Delta Time
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
+		// Handle inputs
+		glfwPollEvents();
+		processInput(window);
+
 		// Clear the screen
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Handle inputs
-		processInput(window);
-		
-		// Model Matrix
-		/*glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model,(float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));*/
-		// View Matrix
-		glm::mat4 view;
-		// we're translating the scene in the reverse direction of where we want to move
-		view = camera.GetViewMatrix();
-		//view = glm::rotate(view, (float)glfwGetTime() * glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		// Feed inputs to dear imgui, start new frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
+		// View and Projection Matrix
+		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-		// Projection Matrix
-		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(fov), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+		// Set up shader for coloured cube
+		ourFirstShader.Use();
+		ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		ourFirstShader.SetMat4("projection", projection);
+		ourFirstShader.SetMat4("view", view);
 
-		int viewLoc = glGetUniformLocation(ourFirstShader.ID, "view");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		// World Transform
+		glm::mat4 model = glm::mat4(1.0f);
+		ourFirstShader.SetMat4("model", model);
 
-		int projectionLoc = glGetUniformLocation(ourFirstShader.ID, "projection");
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
+		// Render first cube
 		glBindVertexArray(VAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture2);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);;
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-		for (unsigned int i = 0; i < 10; i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * i;
-			model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f + angle), glm::vec3(0.5f, 1.0f, 0.0f));
-			int modelLoc = glGetUniformLocation(ourFirstShader.ID, "model");
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// Draw the light object
+		lightSourceShader.Use();
+		lightSourceShader.SetMat4("projection", projection);
+		lightSourceShader.SetMat4("view", view);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f));
+		lightSourceShader.SetMat4("model", model);
+
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+		// Render IMGUI AFTER GEO
+		ImGui::Begin("Demo Window");
+		ImGui::Button("Hello!");
+		ImGui::End();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		int display_w, display_h;
+		glfwGetFramebufferSize(window, &display_w, &display_h);
+		glViewport(0, 0, display_w, display_h);
 		// Check and call events and swap the buffers.
 		glfwSwapBuffers(window);
-		glfwPollEvents();
+
 	}
 
 	/*glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteProgram(shaderProgram);*/
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	glfwTerminate();
 	return 0;
 }
