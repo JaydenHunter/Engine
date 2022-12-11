@@ -310,6 +310,7 @@ int main()
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3, 3));
 	ourFirstShader.Use();
 	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
 	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -343,10 +344,12 @@ int main()
 
 		ourFirstShader.Use();
 		// Render IMGUI AFTER GEO
-		ImGui::Begin("Light Settings");
+		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f));
+		ImGui::Begin("Light Settings", NULL,ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 		static float color[4] = { 1.0f,1.0f,1.0f,1.0f };
 		ImGui::ColorEdit3("color", color);
 		ourFirstShader.SetVec3("lightColor", color[0], color[1], color[2]);
+
 		ImGui::End();
 
 		// Set up shader for coloured cube
