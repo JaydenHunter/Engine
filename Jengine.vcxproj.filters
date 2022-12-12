@@ -51,6 +51,9 @@
     <ClCompile Include="Vendor\imgui_impl_opengl3.cpp">
       <Filter>Vendor</Filter>
     </ClCompile>
+    <ClCompile Include="Vendor\ImGuizmo.cpp">
+      <Filter>Vendor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -88,6 +91,12 @@
     </ClInclude>
     <ClInclude Include="Vendor\imgui_impl_opengl3_loader.h">
       <Filter>Vendor</Filter>
+    </ClInclude>
+    <ClInclude Include="Vendor\ImGuizmo.h">
+      <Filter>Vendor</Filter>
+    </ClInclude>
+    <ClInclude Include="MathExt.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -8,57 +8,61 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include "Camera.h"
 #include "Vendor/imgui.h"
 #include "Vendor/imgui_impl_glfw.h"
 #include "Vendor/imgui_impl_opengl3.h"
+#include "Vendor/ImGuizmo.h"
+#include "MathExt.h"
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
 bool editMode = true;
 //Temporary
 float vertices[] = {
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	// positions          // normals           // texture coords
+-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+ 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+ 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+ 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+ 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+ 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+ 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+ 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+ 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+ 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 };
 
 glm::vec3 cubePositions[] = {
@@ -155,6 +159,12 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 		fov = 65.0f;
 }
 
+static const float identityMatrix[16] =
+{ 1.f, 0.f, 0.f, 0.f,
+	0.f, 1.f, 0.f, 0.f,
+	0.f, 0.f, 1.f, 0.f,
+	0.f, 0.f, 0.f, 1.f };
+
 int main()
 {
 	// Flag to check for memory leaks
@@ -214,10 +224,12 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	Shader ourFirstShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/lightFragShader.fs");
 
@@ -225,9 +237,9 @@ int main()
 	stbi_set_flip_vertically_on_load(true);
 
 	// Generating a texture
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
+	unsigned int containerDiffuseTexture;
+	glGenTextures(1, &containerDiffuseTexture);
+	glBindTexture(GL_TEXTURE_2D, containerDiffuseTexture);
 	// Set the texture wrapping/filtering options 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -236,10 +248,10 @@ int main()
 
 	// Load and generate texture.
 	int width, height, nrChannels;
-	unsigned char* data = stbi_load("Assets/Images/container.jpg", &width, &height, &nrChannels, 0);
+	unsigned char* data = stbi_load("Assets/Images/container2.png", &width, &height, &nrChannels, 0);
 	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
@@ -248,16 +260,16 @@ int main()
 	}
 	stbi_image_free(data);
 
-	unsigned int texture2;
-	glGenTextures(1, &texture2);
-	glBindTexture(GL_TEXTURE_2D, texture2);
+	unsigned int containerSpecularTexture;
+	glGenTextures(1, &containerSpecularTexture);
+	glBindTexture(GL_TEXTURE_2D, containerSpecularTexture);
 	// Set the texture wrapping/filtering options 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	data = stbi_load("Assets/Images/awesomeface.png", &width, &height, &nrChannels, 0);
+	data = stbi_load("Assets/Images/container2_specular.png", &width, &height, &nrChannels, 0);
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -271,8 +283,7 @@ int main()
 	ourFirstShader.Use();
 	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
 	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
-	glUniform1i(glGetUniformLocation(ourFirstShader.ID, "texture1"), 0); // Set it manually
-	ourFirstShader.SetInt("texture2", 1); // or set with shader class
+
 
 	//Scale and rotate our rectangle
 	glm::mat4 trans = glm::mat4(1.0f);
@@ -290,14 +301,15 @@ int main()
 	glGenVertexArrays(1, &lightVAO);
 	glBindVertexArray(lightVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	Shader lightSourceShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/simpleWhiteFragShader.fs");
 
-	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 	// IMGUI test
 	IMGUI_CHECKVERSION();
@@ -305,7 +317,7 @@ int main()
 	ImGuiIO& io = ImGui::GetIO();
 	ImFont* fontBold = io.Fonts->AddFontFromFileTTF("Assets\\Fonts\\IBM_Plex_Sans\\IBMPlexSans-Bold.ttf", 12.0f);
 	ImFont* fontRegular = io.Fonts->AddFontFromFileTTF("Assets\\Fonts\\IBM_Plex_Sans\\IBMPlexSans-Regular.ttf", 12.0f);
-	
+
 	// Setup platform/renderer bindings
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
@@ -316,8 +328,28 @@ int main()
 	ourFirstShader.Use();
 	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
 	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+
+	static float lightPosition[3] = { 1.2f, 1.0f, 2.0f };
 	static float rotation[3] = { 0.0f,0.0f,0.0f };
-	static float color[4] = { 1.0f,1.0f,1.0f,1.0f };
+
+	float viewManipulateRight = io.DisplaySize.x;
+	float viewManipulateTop = 0;
+
+	// Material Properties
+	static float specularColor[3] = { 0.5f, 0.5f, 0.5f };
+	static float shininess = 32.0f;
+	ourFirstShader.SetFloat("material.shininess", shininess);
+	ourFirstShader.SetInt("material.diffuse", 0);
+	ourFirstShader.SetInt("material.specular", 1);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, containerDiffuseTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, containerSpecularTexture);
+	// Light Properties
+	static float lightAmbientColor[3] = { 0.2f, 0.2f, 0.2f };
+	static float lightDiffuseColor[3] = { 0.5f, 0.5f, 0.5f };
+	static float lightSpecularColor[3] = { 1.0f, 1.0f, 1.0f };
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -331,7 +363,7 @@ int main()
 		processInput(window);
 
 		// Clear the screen
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Feed inputs to dear imgui, start new frame
@@ -341,7 +373,7 @@ int main()
 
 		// View and Projection Matrix
 		glm::mat4 view = camera.GetViewMatrix();
-		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(fov), io.DisplaySize.x / io.DisplaySize.y, 0.1f, 100.0f);
 
 		glm::mat4 model = glm::mat4(1.0f);
 
@@ -351,14 +383,21 @@ int main()
 		{
 			ImGui::PushFont(fontBold);
 			ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-			ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+			ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove);
+
+
+			// END GIZMOS
 			ImGui::LabelText(" ", "Light Settings");
 			ImGui::PopFont();
-			
+
 			ImGui::PushFont(fontRegular);
-			ImGui::ColorEdit3("color", color);
-			ourFirstShader.SetVec3("lightColor", color[0], color[1], color[2]);
-			
+			ImGui::DragFloat3("Position", lightPosition, 0.1f);
+			ImGui::ColorEdit3("Ambient Color", lightAmbientColor);
+			ImGui::ColorEdit3("Diffuse Color", lightDiffuseColor);
+			ImGui::ColorEdit3("Specular Color", lightSpecularColor);
+			ourFirstShader.SetVec3("light.ambient", lightAmbientColor[0], lightAmbientColor[1], lightAmbientColor[2]);
+			ourFirstShader.SetVec3("light.diffuse", lightDiffuseColor[0], lightDiffuseColor[1], lightDiffuseColor[2]);
+			ourFirstShader.SetVec3("light.specular", lightSpecularColor[0], lightSpecularColor[1], lightSpecularColor[2]);
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
@@ -376,31 +415,47 @@ int main()
 				if (rotation[i] > 360)
 					rotation[i] = 0;
 			}
+
+			ImGui::ColorEdit3("Specular", specularColor);
+			//ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1.0f);
+			ourFirstShader.SetVec3("material.specular", specularColor[0], specularColor[1], specularColor[2]);
+			//ourFirstShader.SetFloat("material.shininess", shininess);
 			ImGui::PopFont();
 			ImGui::End();
 		}
 
+		glm::vec3 lightPosV3 = glm::vec3(lightPosition[0], lightPosition[1], lightPosition[2]);
+		ourFirstShader.SetVec3("light.position", lightPosV3);
 		// Set up shader for coloured cube
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
-
+		ourFirstShader.SetVec3("viewPos", camera.Position);
 		// World Transform
 		
-		model = glm::rotate(model, glm::radians(rotation[0]), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(rotation[1]), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(rotation[2]), glm::vec3(0.0f, 0.0f, 1.0f));
-		ourFirstShader.SetMat4("model", model);
+		for (int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			model = glm::rotate(model, glm::radians(rotation[0] + (i * 10)), glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(rotation[1] + (i * 10)), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(rotation[2] + (i * 10)), glm::vec3(0.0f, 0.0f, 1.0f));
+			ourFirstShader.SetMat4("model", model);
+			glm::mat3 normalMatrix = model;
+			normalMatrix = glm::inverseTranspose(normalMatrix);
+			ourFirstShader.SetMat3("normalMatrix", normalMatrix);
 
-		// Render first cube
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+			// Render first cube
+			glBindVertexArray(VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		// Draw the light object
 		lightSourceShader.Use();
 		lightSourceShader.SetMat4("projection", projection);
 		lightSourceShader.SetMat4("view", view);
+
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, lightPos);
+		model = glm::translate(model, lightPosV3);
 		model = glm::scale(model, glm::vec3(0.2f));
 		lightSourceShader.SetMat4("model", model);
 
