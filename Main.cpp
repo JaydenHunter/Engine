@@ -480,6 +480,13 @@ int main()
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 		ourFirstShader.SetMat4("model", model);
+		ourFirstShader.SetVec3("viewPos", camera.Position);
+		lights[0].Position = camera.Position;
+		lights[0].Direction = camera.Forward;
+		SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
+		glm::mat3 normalMatrix = model;
+		normalMatrix = glm::inverseTranspose(normalMatrix);
+		ourFirstShader.SetMat3("normalMatrix", normalMatrix);
 		backpack.Draw(ourFirstShader);
 
 		// Render IMGUI
