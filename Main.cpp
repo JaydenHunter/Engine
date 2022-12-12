@@ -18,6 +18,8 @@
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
+unsigned int LoadTexture(char const* path);
+
 bool editMode = true;
 //Temporary
 float vertices[] = {
@@ -159,12 +161,6 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 		fov = 65.0f;
 }
 
-static const float identityMatrix[16] =
-{ 1.f, 0.f, 0.f, 0.f,
-	0.f, 1.f, 0.f, 0.f,
-	0.f, 0.f, 1.f, 0.f,
-	0.f, 0.f, 0.f, 1.f };
-
 int main()
 {
 	// Flag to check for memory leaks
@@ -237,52 +233,16 @@ int main()
 	stbi_set_flip_vertically_on_load(true);
 
 	// Generating a texture
-	unsigned int containerDiffuseTexture;
-	glGenTextures(1, &containerDiffuseTexture);
-	glBindTexture(GL_TEXTURE_2D, containerDiffuseTexture);
-	// Set the texture wrapping/filtering options 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unsigned int containerDiffuseTexture = LoadTexture("Assets/Images/container2.png");
+	unsigned int containerSpecularTexture = LoadTexture("Assets/Images/container2_specular.png");
+	unsigned int containerEmissionTexture = LoadTexture("Assets/Images/container2_emission.png");
 
-	// Load and generate texture.
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("Assets/Images/container2.png", &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
-
-	unsigned int containerSpecularTexture;
-	glGenTextures(1, &containerSpecularTexture);
-	glBindTexture(GL_TEXTURE_2D, containerSpecularTexture);
-	// Set the texture wrapping/filtering options 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	data = stbi_load("Assets/Images/container2_specular.png", &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
 	ourFirstShader.Use();
 	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
 	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+	ourFirstShader.SetInt("material.diffuse", 0);
+	ourFirstShader.SetInt("material.specular", 1);
+	ourFirstShader.SetInt("material.emission", 2);
 
 
 	//Scale and rotate our rectangle
@@ -339,13 +299,15 @@ int main()
 	static float specularColor[3] = { 0.5f, 0.5f, 0.5f };
 	static float shininess = 32.0f;
 	ourFirstShader.SetFloat("material.shininess", shininess);
-	ourFirstShader.SetInt("material.diffuse", 0);
-	ourFirstShader.SetInt("material.specular", 1);
 
+
+	// These will usually be called each time before you render the cube, but because they arent changing yet, Im leaving it here.
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, containerDiffuseTexture);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, containerSpecularTexture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, containerEmissionTexture);
 	// Light Properties
 	static float lightAmbientColor[3] = { 0.2f, 0.2f, 0.2f };
 	static float lightDiffuseColor[3] = { 0.5f, 0.5f, 0.5f };
@@ -431,7 +393,7 @@ int main()
 		ourFirstShader.SetMat4("view", view);
 		ourFirstShader.SetVec3("viewPos", camera.Position);
 		// World Transform
-		
+
 		for (int i = 0; i < 10; i++)
 		{
 			glm::mat4 model = glm::mat4(1.0f);
@@ -481,5 +443,44 @@ int main()
 	ImGui::DestroyContext();
 	glfwTerminate();
 	return 0;
+}
+
+unsigned int LoadTexture(char const* path)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+
+	int width, height, nrComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+	if (data)
+	{
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+		else
+		{
+			std::cout << "Number of color components not supported for file at path: " << path << std::endl;
+			format = GL_RGB;
+		}
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+	else
+		std::cout << "Texture failed to load at apath: " << path << std::endl;
+
+	stbi_image_free(data);
+
+	return textureID;
 }
 
