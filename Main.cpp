@@ -16,6 +16,8 @@
 #include "Vendor/ImGuizmo.h"
 #include "MathExt.h"
 #include "Light.h"
+#include "Model.h"
+
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
@@ -164,6 +166,7 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 
 int main()
 {
+	//------
 	// Flag to check for memory leaks
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
@@ -228,7 +231,8 @@ int main()
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
-	Shader ourFirstShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/lightFragShader.fs");
+	//Shader ourFirstShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/lightFragShader.fs");
+	Shader ourFirstShader("Assets/Shaders/standard/standardVert.vs", "Assets/Shaders/standard/standardFrag.fs");
 
 	//set stbi to flip on load
 	stbi_set_flip_vertically_on_load(true);
@@ -239,11 +243,11 @@ int main()
 	unsigned int containerEmissionTexture = LoadTexture("Assets/Images/container2_emission.png");
 
 	ourFirstShader.Use();
-	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
-	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
-	ourFirstShader.SetInt("material.diffuse", 0);
-	ourFirstShader.SetInt("material.specular", 1);
-	ourFirstShader.SetInt("material.emission", 2);
+	//ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
+	//ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+	//ourFirstShader.SetInt("material.diffuse", 0);
+	//ourFirstShader.SetInt("material.specular", 1);
+	//ourFirstShader.SetInt("material.emission", 2);
 
 	//Scale and rotate our rectangle
 	glm::mat4 trans = glm::mat4(1.0f);
@@ -352,6 +356,8 @@ int main()
 	for (int i = 0; i < 6; i++)
 		SetShaderDataByLightType(lights[i], &ourFirstShader, i);
 
+	// OUR FIRST MODEL LOADED
+	Model backpack("Assets/Models/backpack/backpack.obj");
 
 	// Render loop
 	while (!glfwWindowShouldClose(window))
@@ -380,89 +386,110 @@ int main()
 
 		glm::mat4 model = glm::mat4(1.0f);
 
-		//ourFirstShader.SetVec3("light.position")
-
-		ourFirstShader.Use();
-		if (editMode)
+		// Old code for reference
 		{
-			ImGui::PushFont(fontBold);
-			ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-			ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove);
+			////ourFirstShader.SetVec3("light.position")
+
+			//ourFirstShader.Use();
+			//if (editMode)
+			//{
+			//	ImGui::PushFont(fontBold);
+			//	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+			//	ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove);
 
 
-			// END GIZMOS
-			ImGui::LabelText(" ", "Light Settings");
-			ImGui::PopFont();
+			//	// END GIZMOS
+			//	ImGui::LabelText(" ", "Light Settings");
+			//	ImGui::PopFont();
 
-			ImGui::PushFont(fontRegular);
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Spacing();
-			ImGui::PopFont();
+			//	ImGui::PushFont(fontRegular);
+			//	ImGui::Spacing();
+			//	ImGui::Separator();
+			//	ImGui::Spacing();
+			//	ImGui::PopFont();
 
-			ImGui::PushFont(fontBold);
-			ImGui::LabelText(" ", "Cube Settings");
-			ImGui::PopFont();
-			ImGui::PushFont(fontRegular);
-			ImGui::DragFloat3("Rotation", rotation);
-			for (int i = 0; i < 3; i++)
-			{
-				if (rotation[i] < 0)
-					rotation[i] = 360;
-				if (rotation[i] > 360)
-					rotation[i] = 0;
-			}
+			//	ImGui::PushFont(fontBold);
+			//	ImGui::LabelText(" ", "Cube Settings");
+			//	ImGui::PopFont();
+			//	ImGui::PushFont(fontRegular);
+			//	ImGui::DragFloat3("Rotation", rotation);
+			//	for (int i = 0; i < 3; i++)
+			//	{
+			//		if (rotation[i] < 0)
+			//			rotation[i] = 360;
+			//		if (rotation[i] > 360)
+			//			rotation[i] = 0;
+			//	}
 
-			ImGui::ColorEdit3("Specular", specularColor);
-			//ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1.0f);
-			ourFirstShader.SetVec3("material.specular", specularColor[0], specularColor[1], specularColor[2]);
-			//ourFirstShader.SetFloat("material.shininess", shininess);
-			ImGui::PopFont();
-			ImGui::End();
+			//	ImGui::ColorEdit3("Specular", specularColor);
+			//	//ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1.0f);
+			//	ourFirstShader.SetVec3("material.specular", specularColor[0], specularColor[1], specularColor[2]);
+			//	//ourFirstShader.SetFloat("material.shininess", shininess);
+			//	ImGui::PopFont();
+			//	ImGui::End();
+			//}
+
+			//glm::vec3 lightPosV3 = glm::vec3(lightPosition[0], lightPosition[1], lightPosition[2]);
+			////ourFirstShader.SetVec3("light.position", lightPosV3);
+			//// Set up shader for coloured cube
+			//ourFirstShader.SetMat4("projection", projection);
+			//ourFirstShader.SetMat4("view", view);
+			//ourFirstShader.SetVec3("viewPos", camera.Position);
+			//lights[0].Position = camera.Position;
+			//lights[0].Direction = camera.Forward;
+
+			//SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
+			//// World Transform
+
+			//for (int i = 0; i < 10; i++)
+			//{
+			//	glm::mat4 model = glm::mat4(1.0f);
+			//	model = glm::translate(model, cubePositions[i]);
+			//	model = glm::rotate(model, glm::radians(rotation[0] + (i * 10)), glm::vec3(1.0f, 0.0f, 0.0f));
+			//	model = glm::rotate(model, glm::radians(rotation[1] + (i * 10)), glm::vec3(0.0f, 1.0f, 0.0f));
+			//	model = glm::rotate(model, glm::radians(rotation[2] + (i * 10)), glm::vec3(0.0f, 0.0f, 1.0f));
+			//	ourFirstShader.SetMat4("model", model);
+			//	glm::mat3 normalMatrix = model;
+			//	normalMatrix = glm::inverseTranspose(normalMatrix);
+			//	ourFirstShader.SetMat3("normalMatrix", normalMatrix);
+
+			//	// Render first cube
+			//	glBindVertexArray(VAO);
+			//	glDrawArrays(GL_TRIANGLES, 0, 36);
+			//}
+
+			//// Draw the light object
+			//lightSourceShader.Use();
+			//lightSourceShader.SetMat4("projection", projection);
+			//lightSourceShader.SetMat4("view", view);
+
+			//model = glm::mat4(1.0f);
+			//model = glm::translate(model, lightPosV3);
+			//model = glm::scale(model, glm::vec3(0.2f));
+			//lightSourceShader.SetMat4("model", model);
+
+			//glBindVertexArray(lightVAO);
+			//glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
-		glm::vec3 lightPosV3 = glm::vec3(lightPosition[0], lightPosition[1], lightPosition[2]);
-		//ourFirstShader.SetVec3("light.position", lightPosV3);
-		// Set up shader for coloured cube
+
+		// Rendering our model
+		ourFirstShader.Use();
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		ourFirstShader.SetMat4("model", model);
 		ourFirstShader.SetVec3("viewPos", camera.Position);
 		lights[0].Position = camera.Position;
 		lights[0].Direction = camera.Forward;
-
 		SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
-		// World Transform
+		glm::mat3 normalMatrix = model;
+		normalMatrix = glm::inverseTranspose(normalMatrix);
+		ourFirstShader.SetMat3("normalMatrix", normalMatrix);
+		backpack.Draw(ourFirstShader);
 
-		for (int i = 0; i < 10; i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			model = glm::rotate(model, glm::radians(rotation[0] + (i * 10)), glm::vec3(1.0f, 0.0f, 0.0f));
-			model = glm::rotate(model, glm::radians(rotation[1] + (i * 10)), glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::rotate(model, glm::radians(rotation[2] + (i * 10)), glm::vec3(0.0f, 0.0f, 1.0f));
-			ourFirstShader.SetMat4("model", model);
-			glm::mat3 normalMatrix = model;
-			normalMatrix = glm::inverseTranspose(normalMatrix);
-			ourFirstShader.SetMat3("normalMatrix", normalMatrix);
-
-			// Render first cube
-			glBindVertexArray(VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-
-		// Draw the light object
-		lightSourceShader.Use();
-		lightSourceShader.SetMat4("projection", projection);
-		lightSourceShader.SetMat4("view", view);
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, lightPosV3);
-		model = glm::scale(model, glm::vec3(0.2f));
-		lightSourceShader.SetMat4("model", model);
-
-		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
+		// Render IMGUI
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
