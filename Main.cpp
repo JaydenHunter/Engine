@@ -243,11 +243,15 @@ int main()
 	ourFirstShader.SetInt("material.diffuse", 0);
 	ourFirstShader.SetInt("material.specular", 1);
 	ourFirstShader.SetInt("material.emission", 2);
-
+	ourFirstShader.SetFloat("light.constant", 1.0f);
+	ourFirstShader.SetFloat("light.linear", 0.09f);
+	ourFirstShader.SetFloat("light.quadratic", 0.032);
+	glm::vec4 lightPos = { -0.2f, -1.0f, -0.3f, 1.0f };
+	ourFirstShader.SetVec4("light.position", lightPos);
 
 	//Scale and rotate our rectangle
 	glm::mat4 trans = glm::mat4(1.0f);
-	trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+	trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 0.0));
 	trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
 
 	unsigned int transformLoc = glGetUniformLocation(ourFirstShader.ID, "transform");
@@ -354,6 +358,7 @@ int main()
 
 			ImGui::PushFont(fontRegular);
 			ImGui::DragFloat3("Position", lightPosition, 0.1f);
+			lightPos = { lightPosition[0], lightPosition[1],lightPosition[2],1.0f };
 			ImGui::ColorEdit3("Ambient Color", lightAmbientColor);
 			ImGui::ColorEdit3("Diffuse Color", lightDiffuseColor);
 			ImGui::ColorEdit3("Specular Color", lightSpecularColor);
@@ -387,11 +392,12 @@ int main()
 		}
 
 		glm::vec3 lightPosV3 = glm::vec3(lightPosition[0], lightPosition[1], lightPosition[2]);
-		ourFirstShader.SetVec3("light.position", lightPosV3);
+		//ourFirstShader.SetVec3("light.position", lightPosV3);
 		// Set up shader for coloured cube
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
 		ourFirstShader.SetVec3("viewPos", camera.Position);
+		ourFirstShader.SetVec4("light.position", lightPos);
 		// World Transform
 
 		for (int i = 0; i < 10; i++)
