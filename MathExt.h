@@ -16,5 +16,16 @@ namespace MathExt
 		return fArray;
 	}
 
+	float* GlmVec3To3f(glm::vec3 vec3)
+	{
+		float fArray[3];
+
+		const float* pSource = (const float*)glm::value_ptr(vec3);
+		for (int i = 0; i < 3; i++)
+			fArray[i] = pSource[i];
+
+		return fArray;
+	}
+
 }
 

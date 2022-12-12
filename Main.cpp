@@ -15,10 +15,12 @@
 #include "Vendor/imgui_impl_opengl3.h"
 #include "Vendor/ImGuizmo.h"
 #include "MathExt.h"
+#include "Light.h"
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
 unsigned int LoadTexture(char const* path);
+void SetShaderDataByLightType(Light light, Shader* shader, int index);
 
 bool editMode = true;
 //Temporary
@@ -79,7 +81,6 @@ glm::vec3 cubePositions[] = {
 	glm::vec3(1.5f,  0.2f, -1.5f),
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
-
 
 // Callback for when the user resizes the viewport
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -243,11 +244,6 @@ int main()
 	ourFirstShader.SetInt("material.diffuse", 0);
 	ourFirstShader.SetInt("material.specular", 1);
 	ourFirstShader.SetInt("material.emission", 2);
-	ourFirstShader.SetFloat("light.constant", 1.0f);
-	ourFirstShader.SetFloat("light.linear", 0.09f);
-	ourFirstShader.SetFloat("light.quadratic", 0.032);
-	glm::vec4 lightPos = { -0.2f, -1.0f, -0.3f, 1.0f };
-	ourFirstShader.SetVec4("light.position", lightPos);
 
 	//Scale and rotate our rectangle
 	glm::mat4 trans = glm::mat4(1.0f);
@@ -290,8 +286,6 @@ int main()
 	ImGui::StyleColorsDark();
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(5, 5));
 	ourFirstShader.Use();
-	ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
-	ourFirstShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
 	static float lightPosition[3] = { 1.2f, 1.0f, 2.0f };
 	static float rotation[3] = { 0.0f,0.0f,0.0f };
@@ -312,10 +306,53 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, containerSpecularTexture);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, containerEmissionTexture);
-	// Light Properties
-	static float lightAmbientColor[3] = { 0.2f, 0.2f, 0.2f };
-	static float lightDiffuseColor[3] = { 0.5f, 0.5f, 0.5f };
-	static float lightSpecularColor[3] = { 1.0f, 1.0f, 1.0f };
+
+	Light lights[6];
+	// Our Main Spotlight
+	lights[0] = Light(Light::SPOTLIGHT);
+	lights[0].Ambient = glm::vec3(0.0f, 0.0f, 0.0f);
+	lights[0].Specular = glm::vec3(1.0f, 1.0f, 1.0f);
+	lights[0].Diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
+	lights[0].Linear = 0.09f;
+	lights[0].Quadratic = 0.032f;
+	lights[0].InnerCutOff = 7.0f;
+	lights[0].OuterCutOff = 9.0f;
+	// Sunlight
+	lights[1] = Light(Light::DIRECTIONAL);
+	// Point Lights (4)
+	lights[2] = Light(Light::POINT, glm::vec3(0.7f, 0.2f, 2.0f));
+	lights[3] = Light(Light::POINT, glm::vec3(2.3f, -3.3f, -4.0f));
+	lights[4] = Light(Light::POINT, glm::vec3(-4.0f, 2.0f, -12.0f));
+	lights[5] = Light(Light::POINT, glm::vec3(0.0f, 0.0f, -3.0f));
+
+	// Set colors
+	lights[1].Ambient = glm::vec3(0.5f * 0.01f, 0.5f * 0.01f, 0.5f * 0.01f);
+	lights[1].Diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+	lights[1].Specular = glm::vec3(0.5f, 0.5f, 0.5f);
+
+	lights[2].Ambient = glm::vec3(0.86f * 0.01f, 0.25f * 0.01f, 0.13f * 0.01f);
+	lights[2].Diffuse = glm::vec3(0.86f * 0.5f, 0.25f * 0.5f, 0.13f * 0.5f);
+	lights[2].Specular = glm::vec3(0.86f * 0.5f, 0.25f * 0.5f, 0.13f * 0.5f);
+
+	lights[3].Ambient = glm::vec3(0.13f * 0.01f, 0.86f * 0.01f, 0.13f * 0.01f);
+	lights[3].Diffuse = glm::vec3(0.13f * 0.5f, 0.86f * 0.5f, 0.13f * 0.5f);
+	lights[3].Specular = glm::vec3(0.13f * 0.5f, 0.86f * 0.5f, 0.13f * 0.5f);
+
+	lights[4].Ambient = glm::vec3(0.13f * 0.01f, 0.25f * 0.01f, 0.86f * 0.01f);
+	lights[4].Diffuse = glm::vec3(0.13f * 0.5f, 0.25f * 0.5f, 0.86f * 0.5f);
+	lights[4].Specular = glm::vec3(0.13f * 0.5f, 0.25f * 0.5f, 0.86f * 0.5f);
+
+	lights[5].Ambient = glm::vec3(0.86f * 0.01f, 0.25f * 0.01f, 0.86f * 0.01f);
+	lights[5].Diffuse = glm::vec3(0.86f * 0.5f, 0.25f * 0.5f, 0.86f * 0.5f);
+	lights[5].Specular = glm::vec3(0.86f * 0.5f, 0.25f * 0.5f, 0.86f * 0.5f);
+
+	
+
+	// Set our static lights to the shader data
+	for (int i = 0; i < 6; i++)
+		SetShaderDataByLightType(lights[i], &ourFirstShader, i);
+
+
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -343,6 +380,7 @@ int main()
 
 		glm::mat4 model = glm::mat4(1.0f);
 
+		//ourFirstShader.SetVec3("light.position")
 
 		ourFirstShader.Use();
 		if (editMode)
@@ -357,14 +395,6 @@ int main()
 			ImGui::PopFont();
 
 			ImGui::PushFont(fontRegular);
-			ImGui::DragFloat3("Position", lightPosition, 0.1f);
-			lightPos = { lightPosition[0], lightPosition[1],lightPosition[2],1.0f };
-			ImGui::ColorEdit3("Ambient Color", lightAmbientColor);
-			ImGui::ColorEdit3("Diffuse Color", lightDiffuseColor);
-			ImGui::ColorEdit3("Specular Color", lightSpecularColor);
-			ourFirstShader.SetVec3("light.ambient", lightAmbientColor[0], lightAmbientColor[1], lightAmbientColor[2]);
-			ourFirstShader.SetVec3("light.diffuse", lightDiffuseColor[0], lightDiffuseColor[1], lightDiffuseColor[2]);
-			ourFirstShader.SetVec3("light.specular", lightSpecularColor[0], lightSpecularColor[1], lightSpecularColor[2]);
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
@@ -397,7 +427,10 @@ int main()
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
 		ourFirstShader.SetVec3("viewPos", camera.Position);
-		ourFirstShader.SetVec4("light.position", lightPos);
+		lights[0].Position = camera.Position;
+		lights[0].Direction = camera.Forward;
+
+		SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
 		// World Transform
 
 		for (int i = 0; i < 10; i++)
@@ -490,3 +523,43 @@ unsigned int LoadTexture(char const* path)
 	return textureID;
 }
 
+void SetShaderDataByLightType(Light light, Shader* shader, int index)
+{
+	// Move this later and also dynamically set or something.
+	std::string indexer = "pointLights[" + std::to_string(index-2) + "].";
+	switch (light.LightType)
+	{
+	case Light::POINT:
+		shader->SetVec3(indexer + "position", light.Position);
+		shader->SetVec3(indexer + "ambient", light.Ambient);
+		shader->SetVec3(indexer + "diffuse", light.Diffuse);
+		shader->SetVec3(indexer + "specular", light.Specular);
+		shader->SetFloat(indexer + "constant", light.Constant);
+		shader->SetFloat(indexer + "linear", light.Linear);
+		shader->SetFloat(indexer + "quadratic", light.Quadratic);
+		break;
+
+	case Light::DIRECTIONAL:
+		shader->SetVec3("directionalLight.direction", light.Direction);
+		shader->SetVec3("directionalLight.ambient", light.Ambient);
+		shader->SetVec3("directionalLight.diffuse", light.Diffuse);
+		shader->SetVec3("directionalLight.specular", light.Specular);
+		break;
+
+	case Light::SPOTLIGHT:
+		shader->SetVec3("spotLight.position", light.Position);
+		shader->SetVec3("spotLight.direction", light.Direction);
+		shader->SetVec3("spotLight.ambient", light.Ambient);
+		shader->SetVec3("spotLight.diffuse", light.Diffuse);
+		shader->SetVec3("spotLight.specular", light.Specular);
+		shader->SetFloat("spotLight.constant", light.Constant);
+		shader->SetFloat("spotLight.linear", light.Linear);
+		shader->SetFloat("spotLight.quadratic", light.Quadratic);
+		shader->SetFloat("spotLight.innerCutOff", glm::cos(glm::radians(light.InnerCutOff)));
+		shader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(light.OuterCutOff)));
+		break;
+
+	default:
+		break;
+	}
+}

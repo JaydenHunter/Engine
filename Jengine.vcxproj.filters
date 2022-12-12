@@ -54,6 +54,9 @@
     <ClCompile Include="Vendor\ImGuizmo.cpp">
       <Filter>Vendor</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -96,6 +99,9 @@
       <Filter>Vendor</Filter>
     </ClInclude>
     <ClInclude Include="MathExt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
