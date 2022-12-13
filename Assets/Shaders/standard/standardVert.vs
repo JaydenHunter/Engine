@@ -14,7 +14,7 @@ out vec3 Tangent;
 out vec3 Bitangent;
 out ivec4 BoneIDs;
 out vec4 BoneWeights;
-
+out mat3 TBN;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
@@ -30,4 +30,10 @@ void main()
 	Bitangent = aBitangent;
 	BoneIDs = aBoneIDs;
 	BoneWeights = aBoneWeights;
+	
+	// Calculate TBN matrix
+	vec3 T = normalize(vec3(model * vec4(aTangent, 0.0)));
+	vec3 N = normalize(vec3(model * vec4(aNormal, 0.0)));
+	vec3 B = cross(N,T);
+	TBN = mat3(T,B,N);
 }

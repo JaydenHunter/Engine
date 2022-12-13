@@ -235,12 +235,9 @@ int main()
 	Shader ourFirstShader("Assets/Shaders/standard/standardVert.vs", "Assets/Shaders/standard/standardFrag.fs");
 
 	//set stbi to flip on load
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 
-	// Generating a texture
-	unsigned int containerDiffuseTexture = LoadTexture("Assets/Images/container2.png");
-	unsigned int containerSpecularTexture = LoadTexture("Assets/Images/container2_specular.png");
-	unsigned int containerEmissionTexture = LoadTexture("Assets/Images/container2_emission.png");
+
 
 	ourFirstShader.Use();
 	//ourFirstShader.SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
@@ -303,13 +300,7 @@ int main()
 	ourFirstShader.SetFloat("material.shininess", shininess);
 
 
-	// These will usually be called each time before you render the cube, but because they arent changing yet, Im leaving it here.
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, containerDiffuseTexture);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, containerSpecularTexture);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, containerEmissionTexture);
+
 
 	Light lights[6];
 	// Our Main Spotlight
@@ -350,14 +341,25 @@ int main()
 	lights[5].Diffuse = glm::vec3(0.86f * 0.5f, 0.25f * 0.5f, 0.86f * 0.5f);
 	lights[5].Specular = glm::vec3(0.86f * 0.5f, 0.25f * 0.5f, 0.86f * 0.5f);
 
-	
+
 
 	// Set our static lights to the shader data
 	for (int i = 0; i < 6; i++)
 		SetShaderDataByLightType(lights[i], &ourFirstShader, i);
 
 	// OUR FIRST MODEL LOADED
-	Model backpack("Assets/Models/backpack/backpack.obj");
+	Model backpack("Assets/Models/Sponza/NewSponza_Main_Yup_002.fbx");
+
+	// These will usually be called each time before you render the cube, but because they arent changing yet, Im leaving it here.
+	// Generating a texture
+	unsigned int diffuseMap = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Diffuse.png");
+	unsigned int specularMap = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_SpecularGlossiness.png");
+	unsigned int normalMat = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Normal.png");
+
+
+	ourFirstShader.SetInt("material.texture_diffuse1", 0);
+	ourFirstShader.SetInt("material.texture_specular1", 1);
+	ourFirstShader.SetInt("material.texture_normal1", 2);
 
 	// Render loop
 	while (!glfwWindowShouldClose(window))
@@ -384,50 +386,50 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(fov), io.DisplaySize.x / io.DisplaySize.y, 0.1f, 100.0f);
 
-		glm::mat4 model = glm::mat4(1.0f);
+
 
 		// Old code for reference
 		{
 			////ourFirstShader.SetVec3("light.position")
 
 			//ourFirstShader.Use();
-			//if (editMode)
-			//{
-			//	ImGui::PushFont(fontBold);
-			//	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-			//	ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove);
+			if (editMode)
+			{
+				ImGui::PushFont(fontBold);
+				ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+				ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove);
 
 
-			//	// END GIZMOS
-			//	ImGui::LabelText(" ", "Light Settings");
-			//	ImGui::PopFont();
+				//	// END GIZMOS
+				//	ImGui::LabelText(" ", "Light Settings");
+				//	ImGui::PopFont();
 
-			//	ImGui::PushFont(fontRegular);
-			//	ImGui::Spacing();
-			//	ImGui::Separator();
-			//	ImGui::Spacing();
-			//	ImGui::PopFont();
+				//	ImGui::PushFont(fontRegular);
+				//	ImGui::Spacing();
+				//	ImGui::Separator();
+				//	ImGui::Spacing();
+				//	ImGui::PopFont();
 
-			//	ImGui::PushFont(fontBold);
-			//	ImGui::LabelText(" ", "Cube Settings");
-			//	ImGui::PopFont();
-			//	ImGui::PushFont(fontRegular);
-			//	ImGui::DragFloat3("Rotation", rotation);
-			//	for (int i = 0; i < 3; i++)
-			//	{
-			//		if (rotation[i] < 0)
-			//			rotation[i] = 360;
-			//		if (rotation[i] > 360)
-			//			rotation[i] = 0;
-			//	}
+				//	ImGui::PushFont(fontBold);
+				//	ImGui::LabelText(" ", "Cube Settings");
+				//	ImGui::PopFont();
+				//	ImGui::PushFont(fontRegular);
+				ImGui::DragFloat3("Rotation", rotation);
+				for (int i = 0; i < 3; i++)
+				{
+					if (rotation[i] < 0)
+						rotation[i] = 360;
+					if (rotation[i] > 360)
+						rotation[i] = 0;
+				}
 
-			//	ImGui::ColorEdit3("Specular", specularColor);
-			//	//ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1.0f);
-			//	ourFirstShader.SetVec3("material.specular", specularColor[0], specularColor[1], specularColor[2]);
-			//	//ourFirstShader.SetFloat("material.shininess", shininess);
-			//	ImGui::PopFont();
-			//	ImGui::End();
-			//}
+				//	ImGui::ColorEdit3("Specular", specularColor);
+				//	//ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1.0f);
+				//	ourFirstShader.SetVec3("material.specular", specularColor[0], specularColor[1], specularColor[2]);
+					//ourFirstShader.SetFloat("material.shininess", shininess);
+				ImGui::PopFont();
+				ImGui::End();
+			}
 
 			//glm::vec3 lightPosV3 = glm::vec3(lightPosition[0], lightPosition[1], lightPosition[2]);
 			////ourFirstShader.SetVec3("light.position", lightPosV3);
@@ -443,12 +445,10 @@ int main()
 
 			//for (int i = 0; i < 10; i++)
 			//{
-			//	glm::mat4 model = glm::mat4(1.0f);
-			//	model = glm::translate(model, cubePositions[i]);
-			//	model = glm::rotate(model, glm::radians(rotation[0] + (i * 10)), glm::vec3(1.0f, 0.0f, 0.0f));
-			//	model = glm::rotate(model, glm::radians(rotation[1] + (i * 10)), glm::vec3(0.0f, 1.0f, 0.0f));
-			//	model = glm::rotate(model, glm::radians(rotation[2] + (i * 10)), glm::vec3(0.0f, 0.0f, 1.0f));
-			//	ourFirstShader.SetMat4("model", model);
+				//glm::mat4 model = glm::mat4(1.0f);
+				//model = glm::translate(model, cubePositions[i]);
+
+				//ourFirstShader.SetMat4("model", model);
 			//	glm::mat3 normalMatrix = model;
 			//	normalMatrix = glm::inverseTranspose(normalMatrix);
 			//	ourFirstShader.SetMat3("normalMatrix", normalMatrix);
@@ -477,17 +477,38 @@ int main()
 		ourFirstShader.Use();
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-		ourFirstShader.SetMat4("model", model);
+		SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
 		ourFirstShader.SetVec3("viewPos", camera.Position);
 		lights[0].Position = camera.Position;
 		lights[0].Direction = camera.Forward;
-		SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
-		glm::mat3 normalMatrix = model;
-		normalMatrix = glm::inverseTranspose(normalMatrix);
-		ourFirstShader.SetMat3("normalMatrix", normalMatrix);
-		backpack.Draw(ourFirstShader);
+		glm::mat4 model = glm::mat4(1.0f);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuseMap);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specularMap);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, normalMat);
+		for (int i = 0; i < 1; i++)
+		{
+			model = glm::mat4(1.0f);
+			//model = glm::translate(model,cubePositions[i] * 1.5f);
+			//model = glm::translate(model,cubePositions[i] * 1.5f);
+			model = glm::rotate(model, glm::radians(rotation[0]), glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(rotation[1]), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(rotation[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+			model = glm::scale(model, glm::vec3(0.01f, 0.01f, 0.01f));
+			ourFirstShader.SetMat4("model", model);
+
+			glm::mat3 normalMatrix = model;
+			normalMatrix = glm::inverseTranspose(normalMatrix);
+			ourFirstShader.SetMat3("normalMatrix", normalMatrix);
+			backpack.Draw(ourFirstShader);
+		}
+
+
+
+		
 
 		// Render IMGUI
 		ImGui::Render();
@@ -553,7 +574,7 @@ unsigned int LoadTexture(char const* path)
 void SetShaderDataByLightType(Light light, Shader* shader, int index)
 {
 	// Move this later and also dynamically set or something.
-	std::string indexer = "pointLights[" + std::to_string(index-2) + "].";
+	std::string indexer = "pointLights[" + std::to_string(index - 2) + "].";
 	switch (light.LightType)
 	{
 	case Light::POINT:
