@@ -6,6 +6,8 @@ struct Material
 	sampler2D texture_diffuse3;
 	sampler2D texture_specular1;
 	sampler2D texture_specular2;
+	sampler2D texture_normal1;
+	sampler2D texture_normal2;
 };
 
 struct DirectionalLight
@@ -55,6 +57,7 @@ vec3 CalculateSpotLight(SpotLight light, vec3 normal, vec3 fragPosition, vec3 vi
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 UVs;
+in mat3 TBN;
 
 out vec4 FragColor;
 
@@ -75,7 +78,10 @@ uniform SpotLight spotLight;
 void main()
 {
 	// Properties
-	vec3 norm = normalize(Normal);
+	vec3 norm = texture(material.texture_normal1, UVs).rgb;
+	norm = norm * 2.0 -1.0;
+	norm = normalize(TBN * norm);
+
 	vec3 viewDirection = normalize(viewPos - FragPos);
 	
 	// Phase 1: DirectionalLight
