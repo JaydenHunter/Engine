@@ -19,6 +19,7 @@
 #include "Model.h"
 #include "Animation.h"
 #include "Animator.h"
+#include <reactphysics3d/reactphysics3d.h>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -168,7 +169,20 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 
 int main()
 {
-	//------
+	// Physics: ReactPhysics3D
+	reactphysics3d::PhysicsCommon physicsCommon;
+
+	reactphysics3d::PhysicsWorld::WorldSettings settings;
+	settings.gravity = reactphysics3d::Vector3(0, -0.981, 0);
+	reactphysics3d::PhysicsWorld* world = physicsCommon.createPhysicsWorld(settings);
+
+	// Create a rigid body in the world
+	reactphysics3d::Vector3 position(0, 20, 0);
+	reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
+	reactphysics3d::Transform transform(position, orientation);
+	reactphysics3d::RigidBody* body = world->createRigidBody(transform);
+
+	const reactphysics3d::decimal timeStep = 1.0f / 60.0f;
 	// Flag to check for memory leaks
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
@@ -389,6 +403,9 @@ int main()
 		// Handle inputs
 		glfwPollEvents();
 		processInput(window);
+		// Update physics world, this should happen separately and use the timestep
+		world->update(timeStep);
+		//////
 		animator.UpdateAnimation(deltaTime);
 		animatorJolleen.UpdateAnimation(deltaTime);
 		// Clear the screen
@@ -509,7 +526,7 @@ int main()
 		ourFirstShader.Use();
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
-		lights[1].Direction = glm::vec3(dirRotation.x, dirRotation.y,dirRotation.z);
+		lights[1].Direction = glm::vec3(dirRotation.x, dirRotation.y, dirRotation.z);
 		SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
 		SetShaderDataByLightType(lights[1], &ourFirstShader, 1);
 		ourFirstShader.SetVec3("viewPos", camera.Position);
@@ -551,7 +568,8 @@ int main()
 			ourFirstShader.SetMat4("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
 
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-2, 0, 0));
+		reactphysics3d::Vector3 newPos = body->getTransform().getPosition();
+		model = glm::translate(model, glm::vec3(newPos.x, newPos.y, newPos.z));
 		//model = glm::scale(model, glm::vec3(0.01f, 0.01f, 0.01f));
 		ourFirstShader.SetMat4("model", model);
 		glm::mat3 normalMatrix = model;
