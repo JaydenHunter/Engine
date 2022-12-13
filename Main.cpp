@@ -17,6 +17,8 @@
 #include "MathExt.h"
 #include "Light.h"
 #include "Model.h"
+#include "Animation.h"
+#include "Animator.h"
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -232,7 +234,7 @@ int main()
 	glEnableVertexAttribArray(2);
 
 	//Shader ourFirstShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/lightFragShader.fs");
-	Shader ourFirstShader("Assets/Shaders/standard/standardVert.vs", "Assets/Shaders/standard/standardFrag.fs");
+	Shader ourFirstShader("Assets/Shaders/standard/standardVert.vs", "Assets/Shaders/Toon/simpleToon.fs");
 
 	//set stbi to flip on load
 	//stbi_set_flip_vertically_on_load(true);
@@ -269,7 +271,7 @@ int main()
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
-	Shader lightSourceShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/simpleWhiteFragShader.fs");
+	Shader lightSourceShader("Assets/Shaders/lightVertShader.vs", "Assets/Shaders/Toon/simpleToon.fs");
 
 
 	// IMGUI test
@@ -305,9 +307,9 @@ int main()
 	Light lights[6];
 	// Our Main Spotlight
 	lights[0] = Light(Light::SPOTLIGHT);
-	lights[0].Ambient = glm::vec3(0.0f, 0.0f, 0.0f);
+	lights[0].Ambient = glm::vec3(0.5f, 0.5f, 0.5f);
 	lights[0].Specular = glm::vec3(1.0f, 1.0f, 1.0f);
-	lights[0].Diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
+	lights[0].Diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
 	lights[0].Linear = 0.09f;
 	lights[0].Quadratic = 0.032f;
 	lights[0].InnerCutOff = 7.0f;
@@ -321,8 +323,8 @@ int main()
 	lights[5] = Light(Light::POINT, glm::vec3(0.0f, 0.0f, -3.0f));
 
 	// Set colors
-	lights[1].Ambient = glm::vec3(0.5f * 0.01f, 0.5f * 0.01f, 0.5f * 0.01f);
-	lights[1].Diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+	lights[1].Ambient = glm::vec3(0.25f, 0.25f, 0.25f);
+	lights[1].Diffuse = glm::vec3(0.60f, 0.30f, 0.30f);
 	lights[1].Specular = glm::vec3(0.5f, 0.5f, 0.5f);
 
 	lights[2].Ambient = glm::vec3(0.86f * 0.01f, 0.25f * 0.01f, 0.13f * 0.01f);
@@ -348,19 +350,34 @@ int main()
 		SetShaderDataByLightType(lights[i], &ourFirstShader, i);
 
 	// OUR FIRST MODEL LOADED
-	Model backpack("Assets/Models/Sponza/NewSponza_Main_Yup_002.fbx");
+	//Model backpack("Assets/Models/Turret/Turret.fbx");
+	Model ourModel("Assets/Models/Mixamo/Brooklyn Uprock/Brooklyn Uprock.dae");
+	Animation uprockAnimation("Assets/Models/Mixamo/Brooklyn Uprock/Brooklyn Uprock.dae", &ourModel);
+	Animator animator(&uprockAnimation);
+
+	Model jolleen("Assets/Models/Mixamo/Jolleen/Jolleen.dae");
+	Animation zombieWalkAnimation("Assets/Animations/Zombie Walk.dae", &jolleen);
+	Animator animatorJolleen(&zombieWalkAnimation);
 
 	// These will usually be called each time before you render the cube, but because they arent changing yet, Im leaving it here.
 	// Generating a texture
-	unsigned int diffuseMap = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Diffuse.png");
+	/*unsigned int diffuseMap = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Diffuse.png");
 	unsigned int specularMap = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_SpecularGlossiness.png");
-	unsigned int normalMat = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Normal.png");
+	unsigned int normalMat = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Normal.png");*/
+	unsigned int diffuseMap = LoadTexture("Assets/Models/Mixamo/Brooklyn Uprock/textures/vanguard_diffuse1.png");
+	unsigned int specularMap = LoadTexture("Assets/Models/Mixamo/Brooklyn Uprock/textures/vanguard_specular.png");
+	unsigned int normalMat = LoadTexture("Assets/Models/Mixamo/Brooklyn Uprock/textures/vanguard_normal.png");
 
 
 	ourFirstShader.SetInt("material.texture_diffuse1", 0);
 	ourFirstShader.SetInt("material.texture_specular1", 1);
 	ourFirstShader.SetInt("material.texture_normal1", 2);
 
+	bool cellShading = false;
+	bool rimLight = false;
+	float rimLightPower = 2.0f;
+	glm::vec3 rimColor = glm::vec3(1.0f, 1.0f, 1.0f);
+	glm::vec3 dirRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	// Render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -372,7 +389,8 @@ int main()
 		// Handle inputs
 		glfwPollEvents();
 		processInput(window);
-
+		animator.UpdateAnimation(deltaTime);
+		animatorJolleen.UpdateAnimation(deltaTime);
 		// Clear the screen
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -395,23 +413,38 @@ int main()
 			//ourFirstShader.Use();
 			if (editMode)
 			{
-				ImGui::PushFont(fontBold);
+				//ImGui::PushFont(fontBold);
 				ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
 				ImGui::Begin("Settings", NULL, ImGuiWindowFlags_NoMove);
 
+				ImGui::LabelText(" ", "Light Settings");
+				ImGui::Checkbox("Cell Shading", &cellShading);
+				if (cellShading)
+				{
+					ImGui::Checkbox("Rim Lighting", &rimLight);
+					if (rimLight)
+					{
+						ImGui::SliderFloat("Rim Power", &rimLightPower, 0, 32);
+						ImGui::ColorEdit3("Rim Color", (float*)glm::value_ptr(rimColor));
+						ourFirstShader.SetVec3("rimColor", rimColor);
+					}
+				}
+				ImGui::ColorEdit3("Light Color", (float*)glm::value_ptr(lights[1].Diffuse));
+				ImGui::ColorEdit3("Global Ambienct", (float*)glm::value_ptr(lights[1].Ambient));
+				ImGui::SliderFloat3("Light Direction", (float*)glm::value_ptr(dirRotation), 0, 360);
+				//ImGui::PopFont();
 
-				//	// END GIZMOS
-				//	ImGui::LabelText(" ", "Light Settings");
-				//	ImGui::PopFont();
-
+				ourFirstShader.SetBool("cellShading", cellShading);
+				ourFirstShader.SetBool("rimLighting", rimLight);
+				ourFirstShader.SetFloat("rimLightPower", rimLightPower);
 				//	ImGui::PushFont(fontRegular);
-				//	ImGui::Spacing();
-				//	ImGui::Separator();
-				//	ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
 				//	ImGui::PopFont();
 
 				//	ImGui::PushFont(fontBold);
-				//	ImGui::LabelText(" ", "Cube Settings");
+				ImGui::LabelText(" ", "Cube Settings");
 				//	ImGui::PopFont();
 				//	ImGui::PushFont(fontRegular);
 				ImGui::DragFloat3("Rotation", rotation);
@@ -427,7 +460,6 @@ int main()
 				//	//ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1.0f);
 				//	ourFirstShader.SetVec3("material.specular", specularColor[0], specularColor[1], specularColor[2]);
 					//ourFirstShader.SetFloat("material.shininess", shininess);
-				ImGui::PopFont();
 				ImGui::End();
 			}
 
@@ -477,7 +509,9 @@ int main()
 		ourFirstShader.Use();
 		ourFirstShader.SetMat4("projection", projection);
 		ourFirstShader.SetMat4("view", view);
+		lights[1].Direction = glm::vec3(dirRotation.x, dirRotation.y,dirRotation.z);
 		SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
+		SetShaderDataByLightType(lights[1], &ourFirstShader, 1);
 		ourFirstShader.SetVec3("viewPos", camera.Position);
 		lights[0].Position = camera.Position;
 		lights[0].Direction = camera.Forward;
@@ -491,24 +525,41 @@ int main()
 		glBindTexture(GL_TEXTURE_2D, normalMat);
 		for (int i = 0; i < 1; i++)
 		{
+
+			// Get bone matrices
+			auto transforms = animator.GetFinalBoneMatrices();
+			for (int i = 0; i < transforms.size(); i++)
+				ourFirstShader.SetMat4("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+
 			model = glm::mat4(1.0f);
 			//model = glm::translate(model,cubePositions[i] * 1.5f);
-			//model = glm::translate(model,cubePositions[i] * 1.5f);
+			/*model = glm::translate(model, cubePositions[i] * 1.5f);
 			model = glm::rotate(model, glm::radians(rotation[0]), glm::vec3(1.0f, 0.0f, 0.0f));
 			model = glm::rotate(model, glm::radians(rotation[1]), glm::vec3(0.0f, 1.0f, 0.0f));
 			model = glm::rotate(model, glm::radians(rotation[2]), glm::vec3(0.0f, 0.0f, 1.0f));
-			model = glm::scale(model, glm::vec3(0.01f, 0.01f, 0.01f));
+			model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));*/
 			ourFirstShader.SetMat4("model", model);
 
 			glm::mat3 normalMatrix = model;
 			normalMatrix = glm::inverseTranspose(normalMatrix);
 			ourFirstShader.SetMat3("normalMatrix", normalMatrix);
-			backpack.Draw(ourFirstShader);
+			ourModel.Draw(ourFirstShader);
 		}
 
+		auto transforms = animatorJolleen.GetFinalBoneMatrices();
+		for (int i = 0; i < transforms.size(); i++)
+			ourFirstShader.SetMat4("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-2, 0, 0));
+		//model = glm::scale(model, glm::vec3(0.01f, 0.01f, 0.01f));
+		ourFirstShader.SetMat4("model", model);
+		glm::mat3 normalMatrix = model;
+		normalMatrix = glm::inverseTranspose(normalMatrix);
+		ourFirstShader.SetMat3("normalMatrix", normalMatrix);
+		jolleen.Draw(ourFirstShader);
 
 
-		
 
 		// Render IMGUI
 		ImGui::Render();

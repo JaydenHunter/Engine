@@ -15,15 +15,38 @@ out vec3 Bitangent;
 out ivec4 BoneIDs;
 out vec4 BoneWeights;
 out mat3 TBN;
+
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform mat3 normalMatrix;
 
+const int MAX_BONES = 100;
+const int MAX_BONE_INFLUENCE = 4;
+uniform mat4 finalBonesMatrices[MAX_BONES];
+
 void main()
 {
-	gl_Position = projection * view * model * vec4(aPosition,1.0);
-	FragPos = vec3(model * vec4(aPosition, 1.0));
+
+	// Work out the total position of the vertex
+	vec4 totalPosition = vec4(0.0f);
+	for(int i = 0; i < MAX_BONE_INFLUENCE;i++)
+	{
+		if(aBoneIDs[i] == -1)
+			continue;
+		if(aBoneIDs[i] >= MAX_BONES)
+		{
+			//totalPosition = vec4(aPosition, 1.0f);
+			break;
+		}
+		
+		vec4 localPosition = finalBonesMatrices[aBoneIDs[i]] * vec4(aPosition, 1.0f);
+		totalPosition += localPosition * aBoneWeights[i];
+		vec3 localNormal = mat3(finalBonesMatrices[aBoneIDs[i]]) * aNormal;
+	}
+
+	gl_Position = projection * view * model * totalPosition;
+	FragPos = vec3(model *totalPosition);
 	Normal = normalMatrix * aNormal;
 	UVs = aUVs;
 	Tangent = aTangent;

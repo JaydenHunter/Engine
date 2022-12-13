@@ -9,6 +9,67 @@ void Model::Draw(Shader& shader)
 		Meshes[i].Draw(shader);
 }
 
+void Model::SetVertexBoneDataToDefault(Vertex& vertex)
+{
+	for (unsigned int i = 0; i < MAX_BONE_INFLUENCE; i++)
+	{
+		vertex.BoneIDs[i] = -1;
+		vertex.BoneWeights[i] = 0.0f;
+	}
+}
+
+void Model::SetVertexBoneData(Vertex& vertex, int boneID, float weight)
+{
+	for (unsigned int i = 0; i < MAX_BONE_INFLUENCE; i++)
+	{
+		if (vertex.BoneIDs[i] < 0)
+		{
+			vertex.BoneIDs[i] = boneID;
+			vertex.BoneWeights[i] = weight;
+			break; // Investigate this break.
+		}
+	}
+}
+
+void Model::ExtractBoneWeightForVertices(vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene)
+{
+	for (int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
+	{
+		int boneID = -1;
+		string boneName = mesh->mBones[boneIndex]->mName.C_Str();
+
+		// Check that it isnt currently in the map
+		if (boneDataMap.find(boneName) == boneDataMap.end())
+		{
+			BoneData newBoneData;
+			newBoneData.ID = boneCounter;
+			// If issue may be columns/rows in conversion
+			newBoneData.Offset = AssimpMat4ToGlmMat4(mesh->mBones[boneIndex]->mOffsetMatrix);
+			boneDataMap[boneName] = newBoneData;
+			boneID = boneCounter;
+			boneCounter++;
+		}
+		else
+		{
+			boneID = boneDataMap[boneName].ID;
+		}
+
+		assert(boneID != -1);
+
+		auto weights = mesh->mBones[boneIndex]->mWeights;
+		int numWeights = mesh->mBones[boneIndex]->mNumWeights;
+
+		for (unsigned int weightIndex = 0; weightIndex < numWeights; weightIndex++)
+		{
+			int vertexID = weights[weightIndex].mVertexId;
+			float weight = weights[weightIndex].mWeight;
+
+			assert(vertexID <= vertices.size());
+			SetVertexBoneData(vertices[vertexID], boneID, weight);
+		}
+	}
+}
+
 void Model::LoadModel(string path)
 {
 	Assimp::Importer importer;
@@ -50,6 +111,10 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		Vertex vertex;
+
+		// Default Bone Data
+		SetVertexBoneDataToDefault(vertex);
+
 		// Process vertex positions, normals and UVs
 		vertex.Position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
 
@@ -105,6 +170,10 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		vector<Texture> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
 		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 	}
+
+	// Get Bone Data
+	ExtractBoneWeightForVertices(vertices, mesh, scene);
+
     return Mesh(vertices, indices, textures);
 }
 
@@ -178,4 +247,32 @@ unsigned int Model::TextureFromFile(const char* path, const string& directory, b
 	stbi_image_free(data);
 
 	return textureID;
+}
+
+glm::mat4 Model::AssimpMat4ToGlmMat4(aiMatrix4x4 data)
+{
+	glm::mat4 convertedData;
+
+	convertedData[0][0] = data.a1;
+	convertedData[0][1] = data.b1;
+	convertedData[0][2] = data.c1;
+	convertedData[0][3] = data.d1;
+
+	convertedData[1][0] = data.a2;
+	convertedData[1][1] = data.b2;
+	convertedData[1][2] = data.c2;
+	convertedData[1][3] = data.d2;
+
+	convertedData[2][0] = data.a3;
+	convertedData[2][1] = data.b3;
+	convertedData[2][2] = data.c3;
+	convertedData[2][3] = data.d3;
+
+	convertedData[3][0] = data.a4;
+	convertedData[3][1] = data.b4;
+	convertedData[3][2] = data.c4;
+	convertedData[3][3] = data.d4;
+
+	return convertedData;
+
 }
