@@ -217,7 +217,8 @@ int main()
 	}
 	else
 	{
-		engine->play2D("Assets/Audio/ophelia.mp3", true);
+		//engine->play2D("Assets/Audio/ophelia.mp3", true);
+		engine->play2D("Assets/Audio/Track2HappyLoopEdit.ogg", true);
 	}
 
 	//----------------------------------------------------
