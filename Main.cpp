@@ -166,14 +166,14 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 	if (fov > 65.0f)
 		fov = 65.0f;
 }
-
+using namespace reactphysics3d;
 int main()
 {
 	// Physics: ReactPhysics3D
 	reactphysics3d::PhysicsCommon physicsCommon;
 
 	reactphysics3d::PhysicsWorld::WorldSettings settings;
-	settings.gravity = reactphysics3d::Vector3(0, -0.981, 0);
+	settings.gravity = reactphysics3d::Vector3(0, -9.81f, 0);
 	reactphysics3d::PhysicsWorld* world = physicsCommon.createPhysicsWorld(settings);
 
 	// Create a rigid body in the world
@@ -181,6 +181,23 @@ int main()
 	reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
 	reactphysics3d::Transform transform(position, orientation);
 	reactphysics3d::RigidBody* body = world->createRigidBody(transform);
+
+	SphereShape* sphereShape = physicsCommon.createSphereShape(1.0f);
+
+	// Relative transform of the collider to the body
+	Transform sphereColTrans = Transform::identity();
+	Collider* collider;
+	collider = body->addCollider(sphereShape, sphereColTrans);
+
+	// Create our "plane"
+	reactphysics3d::RigidBody* plane = world->createRigidBody(reactphysics3d::Transform(reactphysics3d::Vector3(0, -0.5f, 0), reactphysics3d::Quaternion::identity()));
+	plane->setType(reactphysics3d::BodyType::STATIC);
+
+	BoxShape* boxShape = physicsCommon.createBoxShape(Vector3(50, 1, 50));
+	Transform boxColTrans = Transform::identity();
+	Collider* boxCol;
+	boxCol = plane->addCollider(boxShape, boxColTrans);
+
 
 	const reactphysics3d::decimal timeStep = 1.0f / 60.0f;
 	// Flag to check for memory leaks
