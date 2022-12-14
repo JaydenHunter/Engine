@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Development\Libraries\ReactPhysics\include;D:\Development\Libraries\OpenGL\includes;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Development\Libraries\ReactPhysics\lib;D:\Development\Libraries\OpenGL\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Development\Libraries\ReactPhysics\include;D:\Development\Libraries\OpenGL\includes;D:\Development\Libraries\irrKlang\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Development\Libraries\ReactPhysics\lib;D:\Development\Libraries\OpenGL\lib;D:\Development\Libraries\irrKlang\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -112,7 +112,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;assimp-vc143-mt.lib;reactphysics3d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;assimp-vc143-mt.lib;reactphysics3d.lib;irrKlang.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
