@@ -20,6 +20,7 @@
 #include "Animation.h"
 #include "Animator.h"
 #include <reactphysics3d/reactphysics3d.h>
+#include <irrKlang.h>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -167,9 +168,11 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 		fov = 65.0f;
 }
 using namespace reactphysics3d;
+using namespace irrklang;
+
 int main()
 {
-	// Physics: ReactPhysics3D
+	// Physics: ReactPhysics3D ------
 	reactphysics3d::PhysicsCommon physicsCommon;
 
 	reactphysics3d::PhysicsWorld::WorldSettings settings;
@@ -177,7 +180,7 @@ int main()
 	reactphysics3d::PhysicsWorld* world = physicsCommon.createPhysicsWorld(settings);
 
 	// Create a rigid body in the world
-	reactphysics3d::Vector3 position(0, 20, 0);
+	reactphysics3d::Vector3 position(0, 50, 0);
 	reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
 	reactphysics3d::Transform transform(position, orientation);
 	reactphysics3d::RigidBody* body = world->createRigidBody(transform);
@@ -190,7 +193,7 @@ int main()
 	collider = body->addCollider(sphereShape, sphereColTrans);
 
 	// Create our "plane"
-	reactphysics3d::RigidBody* plane = world->createRigidBody(reactphysics3d::Transform(reactphysics3d::Vector3(0, -0.5f, 0), reactphysics3d::Quaternion::identity()));
+	reactphysics3d::RigidBody* plane = world->createRigidBody(reactphysics3d::Transform(reactphysics3d::Vector3(0, -2.0f, 0), reactphysics3d::Quaternion::identity()));
 	plane->setType(reactphysics3d::BodyType::STATIC);
 
 	BoxShape* boxShape = physicsCommon.createBoxShape(Vector3(50, 1, 50));
@@ -200,6 +203,26 @@ int main()
 
 
 	const reactphysics3d::decimal timeStep = 1.0f / 60.0f;
+
+	//---------------------------------------------------
+	
+
+	// ---- IIRKLANG AUDIO TEST -----
+
+	ISoundEngine* engine = createIrrKlangDevice();
+
+	if (!engine)
+	{
+		std::cout << "Failed to create audio engine!" << std::endl;
+	}
+	else
+	{
+		engine->play2D("Assets/Audio/ophelia.mp3", true);
+	}
+
+	//----------------------------------------------------
+
+
 	// Flag to check for memory leaks
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
@@ -611,6 +634,8 @@ int main()
 	/*glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteProgram(shaderProgram);*/
+	// Delete Physics world and audio engine
+	engine->drop();
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
