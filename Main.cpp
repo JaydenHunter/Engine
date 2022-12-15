@@ -147,6 +147,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	float yOffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
 	lastX = xpos;
 	lastY = ypos;
+
 	if (!editMode)
 	{
 		camera.ProcessMouseMovement(xOffset, yOffset, true);
@@ -173,17 +174,17 @@ using namespace irrklang;
 int main()
 {
 	// Physics: ReactPhysics3D ------
-	reactphysics3d::PhysicsCommon physicsCommon;
+	PhysicsCommon physicsCommon;
 
-	reactphysics3d::PhysicsWorld::WorldSettings settings;
+	PhysicsWorld::WorldSettings settings;
 	settings.gravity = reactphysics3d::Vector3(0, -9.81f, 0);
 	reactphysics3d::PhysicsWorld* world = physicsCommon.createPhysicsWorld(settings);
 
 	// Create a rigid body in the world
-	reactphysics3d::Vector3 position(0, 50, 0);
-	reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
-	reactphysics3d::Transform transform(position, orientation);
-	reactphysics3d::RigidBody* body = world->createRigidBody(transform);
+	Vector3 position(0, 50, 0);
+	Quaternion orientation = reactphysics3d::Quaternion::identity();
+	Transform transform(position, orientation);
+	RigidBody* body = world->createRigidBody(transform);
 
 	SphereShape* sphereShape = physicsCommon.createSphereShape(1.0f);
 
@@ -355,9 +356,6 @@ int main()
 	static float specularColor[3] = { 0.5f, 0.5f, 0.5f };
 	static float shininess = 32.0f;
 	ourFirstShader.SetFloat("material.shininess", shininess);
-
-
-
 
 	Light lights[6];
 	// Our Main Spotlight
