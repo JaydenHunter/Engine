@@ -20,7 +20,7 @@
 #include "Animation.h"
 #include "Animator.h"
 #include <reactphysics3d/reactphysics3d.h>
-#include <irrKlang.h>
+#include "Vendor/irrKlang/include/irrKlang.h"
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
