@@ -71,11 +71,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(WindowsSDK_IncludePath);$(SolutionDir)Vendor\ReactPhysics\Debug\include;$(SolutionDir)Vendor\OpenGL\includes;$(SolutionDir)Vendor\irrKlang\include$(IncludePath)</IncludePath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(SolutionDir)Vendor\ReactPhysics\include;$(SolutionDir)Vendor\OpenGL\includes;$(SolutionDir)Vendor\irrKlang\include$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)Vendor\ReactPhysics\Debug\lib;$(SolutionDir)Vendor\OpenGL\lib;$(SolutionDir)Vendor\irrKlang\lib;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Vendor\ReactPhysics\Release\include;$(SolutionDir)Vendor\OpenGL\includes;$(SolutionDir)Vendor\irrKlang\include</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Vendor\ReactPhysics\include;$(SolutionDir)Vendor\OpenGL\includes;$(SolutionDir)Vendor\irrKlang\include</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)Vendor\ReactPhysics\Release\lib;$(SolutionDir)Vendor\OpenGL\lib;$(SolutionDir)Vendor\irrKlang\lib;</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

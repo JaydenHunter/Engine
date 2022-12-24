@@ -19,7 +19,7 @@
 #include "Model.h"
 #include "Animation.h"
 #include "Animator.h"
-#include <reactphysics3d/reactphysics3d.h>
+#include "Vendor/ReactPhysics/include/reactphysics3d/reactphysics3d.h"
 #include "Vendor/irrKlang/include/irrKlang.h"
 
 const int SCREEN_WIDTH = 800;
