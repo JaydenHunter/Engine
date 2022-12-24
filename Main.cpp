@@ -414,9 +414,6 @@ int main()
 
 	// These will usually be called each time before you render the cube, but because they arent changing yet, Im leaving it here.
 	// Generating a texture
-	/*unsigned int diffuseMap = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Diffuse.png");
-	unsigned int specularMap = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_SpecularGlossiness.png");
-	unsigned int normalMat = LoadTexture("Assets/Models/Turret/Turret_Turret_MAT_Normal.png");*/
 	unsigned int diffuseMap = LoadTexture("Assets/Models/Mixamo/Brooklyn Uprock/textures/vanguard_diffuse1.png");
 	unsigned int specularMap = LoadTexture("Assets/Models/Mixamo/Brooklyn Uprock/textures/vanguard_specular.png");
 	unsigned int normalMat = LoadTexture("Assets/Models/Mixamo/Brooklyn Uprock/textures/vanguard_normal.png");
@@ -511,53 +508,8 @@ int main()
 					if (rotation[i] > 360)
 						rotation[i] = 0;
 				}
-
-				//	ImGui::ColorEdit3("Specular", specularColor);
-				//	//ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1.0f);
-				//	ourFirstShader.SetVec3("material.specular", specularColor[0], specularColor[1], specularColor[2]);
-					//ourFirstShader.SetFloat("material.shininess", shininess);
 				ImGui::End();
 			}
-
-			//glm::vec3 lightPosV3 = glm::vec3(lightPosition[0], lightPosition[1], lightPosition[2]);
-			////ourFirstShader.SetVec3("light.position", lightPosV3);
-			//// Set up shader for coloured cube
-			//ourFirstShader.SetMat4("projection", projection);
-			//ourFirstShader.SetMat4("view", view);
-			//ourFirstShader.SetVec3("viewPos", camera.Position);
-			//lights[0].Position = camera.Position;
-			//lights[0].Direction = camera.Forward;
-
-			//SetShaderDataByLightType(lights[0], &ourFirstShader, 0);
-			//// World Transform
-
-			//for (int i = 0; i < 10; i++)
-			//{
-				//glm::mat4 model = glm::mat4(1.0f);
-				//model = glm::translate(model, cubePositions[i]);
-
-				//ourFirstShader.SetMat4("model", model);
-			//	glm::mat3 normalMatrix = model;
-			//	normalMatrix = glm::inverseTranspose(normalMatrix);
-			//	ourFirstShader.SetMat3("normalMatrix", normalMatrix);
-
-			//	// Render first cube
-			//	glBindVertexArray(VAO);
-			//	glDrawArrays(GL_TRIANGLES, 0, 36);
-			//}
-
-			//// Draw the light object
-			//lightSourceShader.Use();
-			//lightSourceShader.SetMat4("projection", projection);
-			//lightSourceShader.SetMat4("view", view);
-
-			//model = glm::mat4(1.0f);
-			//model = glm::translate(model, lightPosV3);
-			//model = glm::scale(model, glm::vec3(0.2f));
-			//lightSourceShader.SetMat4("model", model);
-
-			//glBindVertexArray(lightVAO);
-			//glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
 
